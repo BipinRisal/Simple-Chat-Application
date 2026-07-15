@@ -4,19 +4,19 @@ import sys
 
 NAME_TAG = "__NAME__:"
 
-def receive_messages(sock, peer_name, my_name):
+def receive_messages(sock, my_name):
     while True:
         try:
             data = sock.recv(1024)
             if not data:
-                print("\nConnection closed by the other side.")
-                sock.close()
-                sys.exit(0)
-            message = data.decode("utf-8")
-            print(f"\r\033[2K{peer_name}: {message}\n{my_name}(You): ", end="", flush=True)
-        except (ConnectionResetError, OSError):
-            print("\nConnection lost.")
-            sys.exit(0)
+                print("\nDisconnected from server.")
+                break
+
+            print(f"\r\033[2K{data.decode('utf-8')}")
+            print(f"{my_name}: ", end="", flush=True)
+
+        except:
+            break
 
 
 def send_messages(sock, my_name):
@@ -47,12 +47,20 @@ def run_client(host, port, my_name):
     print("Connected.")
 
     peer_name = exchange_names(client_sock, my_name)
-    print(f"Chatting with {peer_name}. Start chatting (type 'exit' to quit).\n")
+    print("Connected to chat server.")
+    print("Type 'exit' to quit.\n")
 
-    receiver = threading.Thread(target=receive_messages, args=(client_sock, peer_name, my_name), daemon=True)
+    receiver = threading.Thread(
+        target=receive_messages,
+        args=(client_sock, my_name),
+        daemon=True
+    )   
     receiver.start()
-
-    send_messages(client_sock, my_name)
+    try:
+        send_messages(client_sock, my_name)
+    except KeyboardInterrupt:
+        print("\nLeaving chat...")
+        client_sock.close()
 
 
 def main():
